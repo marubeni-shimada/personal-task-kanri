@@ -72,7 +72,37 @@
   .btn.primary:hover{background:#000}
   .btn.danger{color:#9C0006; border-color:#f0b7bc; background:#fff}
   .btn.danger:hover{background:#fdecee}
-  .board{flex:1 1 auto; min-height:0; overflow:auto; display:flex; gap:14px; padding:16px 20px 24px; align-items:stretch}
+  .main{flex:1 1 auto; min-height:0; display:flex}
+  .board{flex:1 1 auto; min-width:0; min-height:0; overflow:auto; display:flex; gap:14px; padding:16px 20px 24px; align-items:stretch}
+  .today{flex:0 0 340px; max-width:82vw; border-left:1px solid var(--line); background:#fff; display:flex; flex-direction:column; min-height:0}
+  .today.collapsed{display:none}
+  .tp-head{display:flex; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line)}
+  .tp-head b{font-size:14px}
+  .tp-x{margin-left:auto; border:none; background:none; color:var(--sub); font-size:18px; cursor:pointer; line-height:1; padding:2px 6px}
+  .tp-datebar{display:flex; align-items:center; gap:6px; padding:10px 12px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+  .tp-date{font-size:13.5px; font-weight:700; min-width:104px}
+  .nav{font-size:13px; padding:5px 9px; border:1px solid var(--line); background:#fff; border-radius:7px; cursor:pointer; color:var(--ink)}
+  .nav:hover{border-color:#b9c2ce}
+  .tp-datebar input[type=date]{font:inherit; font-size:12px; padding:5px 7px; border:1px solid #d3d9e2; border-radius:7px}
+  .tp-addbox{position:relative; padding:10px 12px; border-bottom:1px solid var(--line)}
+  .tp-addbox input[type=text]{width:100%; font:inherit; font-size:13px; padding:9px 10px; border:1px solid #d3d9e2; border-radius:8px}
+  .tp-sug{position:absolute; left:12px; right:12px; top:calc(100% - 2px); background:#fff; border:1px solid var(--line); border-radius:9px; box-shadow:0 10px 26px rgba(20,25,40,.14); z-index:15; overflow:hidden}
+  .tp-sug[hidden]{display:none}
+  .tp-sug button{display:flex; width:100%; align-items:center; gap:8px; border:none; background:none; text-align:left; padding:9px 11px; font-size:12.5px; cursor:pointer; color:var(--ink)}
+  .tp-sug button:hover,.tp-sug button.hi{background:var(--paper)}
+  .tp-sug .mini{font-size:10px; color:var(--op-t); background:var(--op-b); padding:1px 7px; border-radius:99px}
+  .tp-list{flex:1 1 auto; overflow:auto; padding:10px 12px; display:flex; flex-direction:column; gap:7px}
+  .tp-it{display:flex; align-items:center; gap:9px; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--op-l); border-radius:0 9px 9px 0; padding:8px 10px}
+  .tp-it.spot{border-left-color:var(--sa-l)}
+  .tp-it input[type=checkbox]{width:16px; height:16px; flex:none; cursor:pointer}
+  .tp-it .l{font-size:12.5px; flex:1; line-height:1.4}
+  .tp-it.done .l{text-decoration:line-through; color:var(--muted,#9aa2ad)}
+  .tp-bd{font-size:10px; padding:1px 7px; border-radius:99px; white-space:nowrap}
+  .tp-bd.board{background:var(--op-b); color:var(--op-t)}
+  .tp-bd.spot{background:var(--sa-b); color:var(--sa-t)}
+  .tp-del{background:none; border:none; color:#9aa2ad; cursor:pointer; font-size:15px; padding:1px 4px}
+  .tp-del:hover{color:#9C0006}
+  .tp-empty{color:#9aa2ad; font-size:12px; text-align:center; padding:14px 6px}
   .col{flex:0 0 300px; max-width:300px; background:#fff; border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; min-height:100%}
   .col.drop{outline:2px dashed #9aa6b8; outline-offset:-4px; background:#fafbfe}
   .col-head{padding:11px 13px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; border-radius:12px 12px 0 0; position:sticky; top:0; z-index:5; box-shadow:0 3px 5px -3px rgba(20,25,40,.18)}
@@ -141,6 +171,7 @@
     </div>
     <span class="spacer"></span>
     <button class="addbtn" id="addBtn">＋ タスク追加</button>
+    <button class="reset" id="todayToggle">今日のタスク</button>
     <button class="reset" id="authBtn">ログイン</button>
     <button class="reset" id="reset">再読み込み</button>
   </div>
@@ -157,7 +188,27 @@
   </div>
 </header>
 
-<div class="board" id="board"></div>
+<div class="main" id="main">
+  <div class="board" id="board"></div>
+  <aside class="today" id="todayPanel">
+    <div class="tp-head">
+      <b>今日のタスク</b>
+      <button class="tp-x" id="todayClose" aria-label="閉じる">»</button>
+    </div>
+    <div class="tp-datebar">
+      <button class="nav" id="tpPrev" aria-label="前の日">‹</button>
+      <span class="tp-date" id="tpDate"></span>
+      <button class="nav" id="tpNext" aria-label="次の日">›</button>
+      <button class="nav" id="tpToday">今日</button>
+      <input type="date" id="tpPick">
+    </div>
+    <div class="tp-addbox" id="tpAddWrap">
+      <input type="text" id="tpAdd" autocomplete="off" placeholder="やることを入力してEnter">
+      <div class="tp-sug" id="tpSug" hidden></div>
+    </div>
+    <div class="tp-list" id="tpList"></div>
+  </aside>
+</div>
 
 <div class="saving" id="saving" hidden><span class="sp"></span>保存中…</div>
 
@@ -607,6 +658,7 @@ function updateAuthUI(){
   const ab = $('authBadge');
   ab.hidden = authed;
   if(!authed){ ab.textContent='閲覧のみ'; ab.style.color='#8a5a00'; ab.style.background='#fff4d6'; ab.style.borderColor='#f0d488'; }
+  if(typeof renderPlan==='function') renderPlan();
 }
 function openLogin(){ $('loginErr').textContent=''; $('f-pw').value=''; $('loginBackdrop').hidden=false; setTimeout(()=>$('f-pw').focus(),30); }
 function closeLogin(){ $('loginBackdrop').hidden=true; }
@@ -679,6 +731,83 @@ function openPop(btn,t){
 }
 function closePop(){ document.querySelectorAll('.pop').forEach(p=>p.remove()); if(backdrop){backdrop.remove(); backdrop=null;} }
 
+// ====== 今日のタスク（右パネル） ======
+let planDate = new Date(); planDate.setHours(0,0,0,0);
+let planItems = [];
+let planHi = -1;
+const isoD = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const WK = ['日','月','火','水','木','金','土'];
+function allBoardTasks(){ let out=[]; Object.keys(store).forEach(k=>{ if(store[k]&&store[k].tasks) out=out.concat(store[k].tasks); }); return out; }
+
+async function loadPlan(){
+  $('tpDate').textContent = (planDate.getMonth()+1)+'月'+planDate.getDate()+'日 ('+WK[planDate.getDay()]+')';
+  $('tpPick').value = isoD(planDate);
+  if(GAS_URL){
+    try{ const r=await fetch(GAS_URL+'?plan='+isoD(planDate)); const j=await r.json(); planItems = j.ok? j.entries : []; }
+    catch(e){ planItems=[]; }
+  } else planItems=[];
+  renderPlan();
+}
+function renderPlan(){
+  const l=$('tpList'); if(!l) return;
+  const aw=$('tpAddWrap'); if(aw) aw.style.display = authed ? '' : 'none';
+  l.innerHTML='';
+  if(!planItems.length){ l.innerHTML='<div class="tp-empty">'+(authed?'入力またはボード名で追加':'今日のタスクはありません')+'</div>'; return; }
+  planItems.forEach(it=>{
+    const row=document.createElement('div'); row.className='tp-it '+it.type+(it.done?' done':'');
+    const cb='<input type="checkbox" '+(it.done?'checked':'')+(authed?'':' disabled')+'>';
+    const del=authed?'<button class="tp-del" aria-label="削除">×</button>':'';
+    row.innerHTML=cb+'<span class="tp-bd '+it.type+'">'+(it.type==='spot'?'スポット':'ボード')+'</span><span class="l">'+escapeHtml(it.label)+'</span>'+del;
+    if(authed){
+      row.querySelector('input').addEventListener('change',()=>planSetDone(it.id, !it.done));
+      row.querySelector('.tp-del').addEventListener('click',()=>planRemove(it.id));
+    }
+    l.appendChild(row);
+  });
+}
+async function planAddItem(type, ref, label){
+  if(!authed) return;
+  const tmp={id:'tmp'+Date.now(), type:type, ref:ref, label:label, done:false};
+  planItems.push(tmp); renderPlan();
+  try{ const j=await gasPost({action:'plan_add', date:isoD(planDate), itemType:type, ref:(ref==null?'':ref), label:label}); tmp.id=j.entry.id; }
+  catch(e){ planItems=planItems.filter(x=>x!==tmp); renderPlan(); setBanner('追加に失敗：'+e.message,true); }
+}
+async function planSetDone(id, done){
+  const it=planItems.find(x=>x.id===id); if(!it) return;
+  it.done=done; renderPlan();
+  try{ await gasPost({action:'plan_done', id:id, done:done}); }
+  catch(e){ it.done=!done; renderPlan(); setBanner('更新に失敗：'+e.message,true); }
+}
+async function planRemove(id){
+  const idx=planItems.findIndex(x=>x.id===id); if(idx<0) return;
+  const rm=planItems[idx]; planItems.splice(idx,1); renderPlan();
+  try{ await gasPost({action:'plan_del', id:id}); }
+  catch(e){ planItems.splice(idx,0,rm); renderPlan(); setBanner('削除に失敗：'+e.message,true); }
+}
+function planUsedNo(){ const u={}; planItems.forEach(x=>{ if(x.type==='board') u[x.ref]=1; }); return u; }
+function planSug(){
+  const q=$('tpAdd').value.trim(), box=$('tpSug');
+  if(!q){ box.hidden=true; return; }
+  const used=planUsedNo();
+  const m=allBoardTasks().filter(t=>!used[t.no] && String(t.name).toLowerCase().indexOf(q.toLowerCase())>=0).slice(0,6);
+  planHi=-1;
+  if(!m.length){ box.hidden=true; return; }
+  box.innerHTML=m.map(t=>'<button data-no="'+t.no+'" data-name="'+escapeHtml(String(t.name)).replace(/"/g,'&quot;')+'"><span class="mini">ボード</span>'+escapeHtml(String(t.name))+'</button>').join('');
+  box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ planAddItem('board', +b.dataset.no, b.dataset.name); $('tpAdd').value=''; box.hidden=true; }));
+  box.hidden=false;
+}
+function planCommit(){
+  const q=$('tpAdd').value.trim(); if(!q) return;
+  const box=$('tpSug'), btns=box.querySelectorAll('button');
+  if(planHi>=0 && btns[planHi]){ planAddItem('board', +btns[planHi].dataset.no, btns[planHi].dataset.name); }
+  else{
+    const used=planUsedNo();
+    const exact=allBoardTasks().find(t=>String(t.name).toLowerCase()===q.toLowerCase() && !used[t.no]);
+    if(exact) planAddItem('board', exact.no, exact.name); else planAddItem('spot', '', q);
+  }
+  $('tpAdd').value=''; box.hidden=true;
+}
+
 // ====== 配線 ======
 $('tabs').addEventListener('click',e=>{ const t=e.target.closest('.tab'); if(t) showBoard(t.dataset.board); });
 $('filters').addEventListener('click',e=>{ const c=e.target.closest('.chip'); if(!c) return;
@@ -693,6 +822,22 @@ $('editorBackdrop').addEventListener('click',e=>{ if(e.target===$('editorBackdro
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('editorBackdrop').hidden) closeEditor(); });
 window.addEventListener('resize',closePop);
 boardEl.addEventListener('scroll',closePop);
+
+$('todayToggle').addEventListener('click',()=>{ const p=$('todayPanel'); p.classList.toggle('collapsed'); lsSet('taskboard_today_open', p.classList.contains('collapsed')?'0':'1'); });
+$('todayClose').addEventListener('click',()=>{ $('todayPanel').classList.add('collapsed'); lsSet('taskboard_today_open','0'); });
+$('tpPrev').addEventListener('click',()=>{ planDate.setDate(planDate.getDate()-1); loadPlan(); });
+$('tpNext').addEventListener('click',()=>{ planDate.setDate(planDate.getDate()+1); loadPlan(); });
+$('tpToday').addEventListener('click',()=>{ planDate=new Date(); planDate.setHours(0,0,0,0); loadPlan(); });
+$('tpPick').addEventListener('change',e=>{ if(e.target.value){ planDate=new Date(e.target.value+'T00:00'); loadPlan(); } });
+$('tpAdd').addEventListener('input',planSug);
+$('tpAdd').addEventListener('keydown',e=>{
+  const btns=$('tpSug').querySelectorAll('button');
+  if(e.key==='ArrowDown'){ planHi=Math.min(planHi+1,btns.length-1); btns.forEach((b,i)=>b.classList.toggle('hi',i===planHi)); e.preventDefault(); }
+  else if(e.key==='ArrowUp'){ planHi=Math.max(planHi-1,-1); btns.forEach((b,i)=>b.classList.toggle('hi',i===planHi)); e.preventDefault(); }
+  else if(e.key==='Enter'){ planCommit(); }
+  else if(e.key==='Escape'){ $('tpSug').hidden=true; }
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('.tp-addbox')) { const s=$('tpSug'); if(s) s.hidden=true; } });
 
 $('modeBadge').textContent = GAS_URL ? 'GAS保存' : '試作 / 保存なし';
 $('modeBadge').style.color = GAS_URL ? '#1b6e3f' : '#8a5a00';
@@ -709,7 +854,9 @@ $('loginBackdrop').addEventListener('click',e=>{ if(e.target===$('loginBackdrop'
 pw = lsGet(LS_KEY);
 authed = !!pw;
 updateAuthUI();
+if(lsGet('taskboard_today_open')==='0') $('todayPanel').classList.add('collapsed');
 showBoard('create');
+loadPlan();
 </script>
 </body>
 </html>
