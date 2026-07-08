@@ -119,6 +119,8 @@
   .tp-del{background:none; border:none; color:#c3ccd6; cursor:pointer; font-size:16px; line-height:1; padding:0 3px; margin-top:1px}
   .tp-del:hover{color:#9C0006}
   .tp-empty{color:#9aa2ad; font-size:12px; text-align:center; padding:14px 6px}
+  .tp-loading{display:flex; align-items:center; justify-content:center; gap:8px; color:var(--sub); font-size:12.5px; padding:24px 6px}
+  .tp-loading .sp2{width:15px; height:15px; border:2px solid #dfe4ec; border-top-color:#5a6472; border-radius:50%; animation:spin .7s linear infinite}
   .tp-actions{padding:10px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:8px}
   .tp-pick{font-size:13px; font-weight:700; padding:9px; border:1px solid var(--op-l); background:var(--op-b); color:var(--op-t); border-radius:9px; cursor:pointer}
   .tp-pick:hover{filter:brightness(.98)}
@@ -791,6 +793,7 @@ async function loadPlan(){
   $('tpDate').textContent = (planDate.getMonth()+1)+'月'+planDate.getDate()+'日 ('+WK[planDate.getDay()]+')';
   $('tpPick').value = isoD(planDate);
   if(GAS_URL){
+    const l=$('tpList'); if(l) l.innerHTML='<div class="tp-loading"><span class="sp2"></span>読み込み中…</div>';
     try{ const r=await fetch(GAS_URL+'?plan='+isoD(planDate)); const j=await r.json(); planItems = j.ok? j.entries : []; }
     catch(e){ planItems=[]; }
   } else planItems=[];
