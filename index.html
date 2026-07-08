@@ -112,10 +112,10 @@
   .tp-it.tp-chosen{cursor:grabbing}
   .tp-it.tp-drag{box-shadow:0 8px 20px rgba(20,25,40,.18)}
   .tp-it.tp-ghost{opacity:.5; background:#eef4fb; border-style:dashed}
-  .tp-note{display:block; height:32px; box-sizing:border-box; resize:none; field-sizing:fixed; font:inherit; font-size:12px; padding:6px 9px; border:1px solid #e3e7ee; border-radius:7px; width:100%; color:var(--ink); background:#fafbfc}
+  .tp-note{display:block; box-sizing:border-box; resize:none; overflow-y:auto; font:inherit; font-size:12px; line-height:1.45; padding:6px 9px; border:1px solid #e3e7ee; border-radius:7px; width:100%; color:var(--ink); background:#fafbfc; min-height:30px}
   .tp-note::placeholder{color:#b8c0cb}
   .tp-note:focus{outline:none; border-color:var(--op-l); background:#fff}
-  .tp-note-ro{font-size:12px; color:var(--sub); line-height:1.45; background:#f7f8fa; border-radius:6px; padding:5px 8px}
+  .tp-note-ro{font-size:12px; color:var(--sub); line-height:1.45; white-space:pre-line; background:#f7f8fa; border-radius:6px; padding:5px 8px}
   .tp-del{background:none; border:none; color:#c3ccd6; cursor:pointer; font-size:16px; line-height:1; padding:0 3px; margin-top:1px}
   .tp-del:hover{color:#9C0006}
   .tp-empty{color:#9aa2ad; font-size:12px; text-align:center; padding:14px 6px}
@@ -810,7 +810,7 @@ function renderPlan(){
     const del=authed?'<button class="tp-del" aria-label="削除">×</button>':'';
     let noteHtml='';
     if(it.type==='board'){
-      if(authed) noteHtml='<input class="tp-note" placeholder="内容・メモを追加" value="'+escapeHtml(it.note||'').replace(/"/g,'&quot;')+'">';
+      if(authed) noteHtml='<textarea class="tp-note" rows="1" placeholder="内容・メモを追加">'+escapeHtml(it.note||'')+'</textarea>';
       else if(it.note) noteHtml='<div class="tp-note-ro">'+escapeHtml(it.note)+'</div>';
     }
     row.innerHTML=cb+'<div class="tp-main"><div class="tp-name">'+escapeHtml(it.label)+'</div>'+noteHtml+'</div>'+del;
@@ -818,7 +818,13 @@ function renderPlan(){
       row.querySelector('.tp-chk').addEventListener('change',()=>planSetDone(it.id, !it.done));
       row.querySelector('.tp-del').addEventListener('click',()=>planRemove(it.id));
       const nt=row.querySelector('.tp-note');
-      if(nt){ nt.addEventListener('change',()=>planSetNote(it.id, nt.value)); nt.addEventListener('keydown',e=>{ if(e.key==='Enter') nt.blur(); }); }
+      if(nt){
+        const grow=()=>{ nt.style.height='auto'; nt.style.height=Math.min(nt.scrollHeight,96)+'px'; };
+        requestAnimationFrame(grow);
+        nt.addEventListener('input', grow);
+        nt.addEventListener('change',()=>planSetNote(it.id, nt.value));
+        nt.addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); nt.blur(); } });
+      }
     }
     l.appendChild(row);
   });
@@ -832,7 +838,7 @@ function initPlanSortable(){
   planSortable = new Sortable($('tpList'), {
     animation:160, easing:'cubic-bezier(.2,.8,.2,1)',
     chosenClass:'tp-chosen', dragClass:'tp-drag', ghostClass:'tp-ghost',
-    filter:'input,button', preventOnFilter:false,
+    filter:'input,button,textarea,.tp-note', preventOnFilter:false,
     onEnd: onPlanDragEnd
   });
 }
