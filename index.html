@@ -91,20 +91,18 @@
   .tp-sug button{display:flex; width:100%; align-items:center; gap:8px; border:none; background:none; text-align:left; padding:9px 11px; font-size:12.5px; cursor:pointer; color:var(--ink)}
   .tp-sug button:hover,.tp-sug button.hi{background:var(--paper)}
   .tp-sug .mini{font-size:10px; color:var(--op-t); background:var(--op-b); padding:1px 7px; border-radius:99px}
-  .tp-list{flex:1 1 auto; overflow:auto; padding:10px 12px; display:flex; flex-direction:column; gap:7px}
-  .tp-it{display:flex; align-items:flex-start; gap:9px; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--op-l); border-radius:0 9px 9px 0; padding:8px 10px}
+  .tp-list{flex:1 1 auto; overflow:auto; padding:10px 12px; display:flex; flex-direction:column; gap:8px}
+  .tp-it{display:flex; align-items:flex-start; gap:9px; background:#fff; border:1px solid var(--line); border-left:3px solid var(--op-l); border-radius:0 10px 10px 0; padding:9px 11px}
   .tp-it.spot{border-left-color:var(--sa-l)}
-  .tp-it input[type=checkbox]{width:16px; height:16px; flex:none; cursor:pointer; margin-top:2px}
-  .tp-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px}
-  .tp-it .l{font-size:12.5px; line-height:1.4}
-  .tp-it.done .l{text-decoration:line-through; color:var(--muted,#9aa2ad)}
-  .tp-note{font:inherit; font-size:11.5px; padding:4px 7px; border:1px solid #e3e7ee; border-radius:6px; width:100%; color:var(--ink)}
-  .tp-note:focus{outline:none; border-color:var(--op-l)}
-  .tp-note-ro{font-size:11.5px; color:var(--sub); line-height:1.4}
-  .tp-bd{font-size:10px; padding:1px 7px; border-radius:99px; white-space:nowrap}
-  .tp-bd.board{background:var(--op-b); color:var(--op-t)}
-  .tp-bd.spot{background:var(--sa-b); color:var(--sa-t)}
-  .tp-del{background:none; border:none; color:#9aa2ad; cursor:pointer; font-size:15px; padding:1px 4px}
+  .tp-chk{width:16px; height:16px; flex:none; cursor:pointer; margin-top:2px}
+  .tp-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px}
+  .tp-name{font-size:13px; line-height:1.5; color:var(--ink); word-break:break-word}
+  .tp-it.done .tp-name{text-decoration:line-through; color:#9aa2ad}
+  .tp-note{font:inherit; font-size:12px; padding:6px 9px; border:1px solid #e3e7ee; border-radius:7px; width:100%; color:var(--ink); background:#fafbfc}
+  .tp-note::placeholder{color:#b8c0cb}
+  .tp-note:focus{outline:none; border-color:var(--op-l); background:#fff}
+  .tp-note-ro{font-size:12px; color:var(--sub); line-height:1.45; background:#f7f8fa; border-radius:6px; padding:5px 8px}
+  .tp-del{background:none; border:none; color:#c3ccd6; cursor:pointer; font-size:16px; line-height:1; padding:0 3px; margin-top:1px}
   .tp-del:hover{color:#9C0006}
   .tp-empty{color:#9aa2ad; font-size:12px; text-align:center; padding:14px 6px}
   .tp-actions{padding:10px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:8px}
@@ -796,11 +794,10 @@ function renderPlan(){
     const del=authed?'<button class="tp-del" aria-label="削除">×</button>':'';
     let noteHtml='';
     if(it.type==='board'){
-      if(authed) noteHtml='<input class="tp-note" placeholder="内容・メモ" value="'+escapeHtml(it.note||'').replace(/"/g,'&quot;')+'">';
-      else if(it.note) noteHtml='<span class="tp-note-ro">'+escapeHtml(it.note)+'</span>';
+      if(authed) noteHtml='<input class="tp-note" placeholder="内容・メモを追加" value="'+escapeHtml(it.note||'').replace(/"/g,'&quot;')+'">';
+      else if(it.note) noteHtml='<div class="tp-note-ro">'+escapeHtml(it.note)+'</div>';
     }
-    row.innerHTML=cb+'<span class="tp-bd '+it.type+'">'+(it.type==='spot'?'スポット':'ボード')+'</span>'
-      +'<div class="tp-main"><span class="l">'+escapeHtml(it.label)+'</span>'+noteHtml+'</div>'+del;
+    row.innerHTML=cb+'<div class="tp-main"><div class="tp-name">'+escapeHtml(it.label)+'</div>'+noteHtml+'</div>'+del;
     if(authed){
       row.querySelector('.tp-chk').addEventListener('change',()=>planSetDone(it.id, !it.done));
       row.querySelector('.tp-del').addEventListener('click',()=>planRemove(it.id));
