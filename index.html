@@ -340,7 +340,7 @@ const escapeHtml = s => (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>'
 // ====== 読み込み ======
 function seedClone(b){
   return b.seed.map(t=>({no:t.no,dept:t.dept,name:t.name,stat:t.stat,
-    pri:(b.hasPriority?(t.pri||3):null), com:t.com||'', upd:'', opDate:'', ops:'', imp:'', active:false}));
+    pri:(b.hasPriority?(t.pri||3):null), com:t.com||'', upd:'', opDate:'', ops:'', imp:'', active:false, ord:t.no}));
 }
 async function loadBoard(key, force){
   const b = BOARDS[key];
@@ -350,7 +350,7 @@ async function loadBoard(key, force){
     const j = await r.json();
     if(!j.ok) throw new Error(j.error||'取得に失敗');
     store[key] = { loaded:true, tasks: j.tasks.map(t=>({no:t.no,dept:t.dept,name:t.name,stat:t.stat,
-      pri:t.pri, com:t.com||'', upd:t.upd||'', opDate:t.opDate||'', ops:t.ops||'', imp:t.imp||'', active:!!t.active})) };
+      pri:t.pri, com:t.com||'', upd:t.upd||'', opDate:t.opDate||'', ops:t.ops||'', imp:t.imp||'', active:!!t.active, ord:(t.ord!=null?t.ord:t.no)})) };
   }else{
     store[key] = { loaded:true, tasks: seedClone(b) };
   }
@@ -408,6 +408,17 @@ function startAutoScroll(){
 }
 function stopAutoScroll(){ dragScroll.active=false; cancelAnimationFrame(dragScroll.raf); }
 
+// 並び順：作業中→優先度→手動順(ord)→No
+function sortComparator(b){
+  return (a,x)=>{
+    const av = Number(!!x.active)-Number(!!a.active); if(av) return av;
+    if(b.hasPriority){ const pv=(a.pri||99)-(x.pri||99); if(pv) return pv; }
+    const ao=(a.ord!=null?a.ord:a.no), xo=(x.ord!=null?x.ord:x.no);
+    if(ao!==xo) return ao-xo;
+    return (a.no||0)-(x.no||0);
+  };
+}
+
 function render(){
   const b = B(), cols = b.columns.map(colInfo);
   let sh = `<div class="pill total"><span class="n">${tasks.length}</span><span class="lab">合計</span></div>`;
@@ -424,10 +435,7 @@ function render(){
     const col = document.createElement('div');
     col.className='col';
     let items = tasks.filter(t=>ci.members.includes(t.stat) && (filter==='all'||t.dept===filter));
-    items.sort((a,x)=>
-      (Number(!!x.active)-Number(!!a.active)) ||
-      (b.hasPriority ? (((a.pri||99)-(x.pri||99))||((a.no||0)-(x.no||0))) : ((a.no||0)-(x.no||0)))
-    );
+    items.sort(sortComparator(b));
     col.innerHTML = `<div class="col-head" style="background:${cv(ci.bvar)}">
         <span class="mark" style="color:${cv(ci.tvar)}">${ci.mark}</span>
         <span class="col-name" style="color:${cv(ci.tvar)}">${ci.name}</span>
@@ -448,9 +456,9 @@ function render(){
       if(!authed) return;
       e.preventDefault(); col.classList.remove('drop');
       const no=+e.dataTransfer.getData('text/plain');
-      const t=tasks.find(x=>x.no===no);
-      if(t && ci.members.includes(t.stat)) return;   // すでに同じグループ内なら変更しない
-      moveTask(no, ci.dropTo);
+      const t=tasks.find(x=>x.no===no); if(!t) return;
+      if(ci.members.includes(t.stat)) reorderCard(no, ci, col.querySelector('.col-body'), e.clientY);  // 同じ列内 → 並び替え
+      else moveTask(no, ci.dropTo);                                                                      // 別の列 → 状況変更
     });
     boardEl.appendChild(col);
   });
@@ -512,7 +520,26 @@ async function moveTask(no, newK){
   }
 }
 
-// ====== 登録・編集・削除 ======
+// ====== 列内の並び替え ======
+function reorderCard(no, ci, body, y){
+  const b = B(), t = tasks.find(x=>x.no===no); if(!t) return;
+  let items = tasks.filter(x=>ci.members.includes(x.stat) && (filter==='all'||x.dept===filter));
+  items.sort(sortComparator(b));
+  const others = items.filter(x=>x.no!==no);
+  const cards = [...body.querySelectorAll('.card')].filter(c=>c.querySelector('.no').textContent!=='#'+no);
+  let idx = cards.length;
+  for(let i=0;i<cards.length;i++){ const r=cards[i].getBoundingClientRect(); if(y < r.top+r.height/2){ idx=i; break; } }
+  const prev = others[idx-1], next = others[idx];
+  const ov = o => (o.ord!=null?o.ord:o.no);
+  let newOrd;
+  if(!prev && !next) newOrd = ov(t);
+  else if(!prev)     newOrd = ov(next) - 1;
+  else if(!next)     newOrd = ov(prev) + 1;
+  else               newOrd = (ov(prev) + ov(next)) / 2;
+  if(newOrd === (t.ord!=null?t.ord:t.no)) return;
+  t.ord = newOrd; render(); flashCard(no);
+  if(GAS_URL){ gasPost({action:'reorder', board:activeBoard, no:no, ord:newOrd}).catch(err=>setBanner('並び順の保存に失敗：'+err.message, true)); }
+}
 let editingNo = null;
 function openEditor(task, presetStat){
   if(!authed) return;
@@ -596,11 +623,11 @@ async function addTask(f){
   if(GAS_URL){
     const j = await gasPost({action:'add', board:activeBoard, task:f});
     tasks.push({no:j.task.no, dept:f.dept, name:f.name, stat:f.stat, pri:(f.pri??null),
-      com:f.com, ops:f.ops||'', imp:f.imp||'', upd:j.task.upd||today(), opDate:j.task.opDate||'', active:false});
+      com:f.com, ops:f.ops||'', imp:f.imp||'', upd:j.task.upd||today(), opDate:j.task.opDate||'', active:false, ord:j.task.no});
   }else{
     const no = tasks.reduce((m,t)=>Math.max(m,+t.no||0),0)+1;
     tasks.push({no, dept:f.dept, name:f.name, stat:f.stat, pri:(f.pri??null),
-      com:f.com, ops:f.ops||'', imp:f.imp||'', upd:today(), opDate:(f.stat==='◎'?today():''), active:false});
+      com:f.com, ops:f.ops||'', imp:f.imp||'', upd:today(), opDate:(f.stat==='◎'?today():''), active:false, ord:no});
   }
   render();
 }
