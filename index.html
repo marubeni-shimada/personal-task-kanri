@@ -103,6 +103,25 @@
   .tp-del{background:none; border:none; color:#9aa2ad; cursor:pointer; font-size:15px; padding:1px 4px}
   .tp-del:hover{color:#9C0006}
   .tp-empty{color:#9aa2ad; font-size:12px; text-align:center; padding:14px 6px}
+  .tp-actions{padding:10px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:8px}
+  .tp-pick{font-size:13px; font-weight:700; padding:9px; border:1px solid var(--op-l); background:var(--op-b); color:var(--op-t); border-radius:9px; cursor:pointer}
+  .tp-pick:hover{filter:brightness(.98)}
+  .tp-spot{display:flex; gap:7px}
+  .tp-spot input{flex:1; min-width:0; font:inherit; font-size:13px; padding:8px 10px; border:1px solid #d3d9e2; border-radius:8px}
+  .tp-spot button{font-size:13px; padding:8px 12px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; color:var(--ink)}
+  .tp-spot button:hover{border-color:#b9c2ce}
+  .pk-grp{font-size:11px; color:var(--sub); padding:8px 6px 4px; display:flex; align-items:center; gap:6px}
+  .pk-grp .mk{font:700 12px var(--mono)}
+  .pk-row{display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:9px; cursor:pointer}
+  .pk-row:hover{background:var(--paper)}
+  .pk-chk{width:18px; height:18px; border:1.5px solid #c3ccd6; border-radius:5px; flex:none; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px}
+  .pk-row.on .pk-chk{background:var(--op-t); border-color:var(--op-t)}
+  .pk-row .nm{font-size:13px; flex:1}
+  .pk-row.on .nm{color:var(--sub)}
+  .pk-row .dep{font-size:10px; color:var(--sub); background:#f1f3f7; padding:1px 7px; border-radius:99px}
+  .todaybtn{font-size:11px; font-weight:700; border:1px solid var(--line); background:#fff; color:var(--sub); border-radius:99px; padding:3px 10px; cursor:pointer; white-space:nowrap}
+  .todaybtn:hover{border-color:#b9c2ce; color:var(--ink)}
+  .todaybtn.on{background:var(--now-t); color:#fff; border-color:var(--now-t)}
   .col{flex:0 0 300px; max-width:300px; background:#fff; border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; min-height:100%}
   .col.drop{outline:2px dashed #9aa6b8; outline-offset:-4px; background:#fafbfe}
   .col-head{padding:11px 13px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; border-radius:12px 12px 0 0; position:sticky; top:0; z-index:5; box-shadow:0 3px 5px -3px rgba(20,25,40,.18)}
@@ -202,15 +221,24 @@
       <button class="nav" id="tpToday">今日</button>
       <input type="date" id="tpPick">
     </div>
-    <div class="tp-addbox" id="tpAddWrap">
-      <input type="text" id="tpAdd" autocomplete="off" placeholder="やることを入力してEnter">
-      <div class="tp-sug" id="tpSug" hidden></div>
+    <div class="tp-actions" id="tpAddWrap">
+      <button class="tp-pick" id="tpOpenPick">＋ ボードから選ぶ</button>
+      <div class="tp-spot"><input type="text" id="tpSpot" placeholder="スポット予定を入力（例：A様現場 立会 10:00）"><button id="tpAddSpot">追加</button></div>
     </div>
     <div class="tp-list" id="tpList"></div>
   </aside>
 </div>
 
 <div class="saving" id="saving" hidden><span class="sp"></span>保存中…</div>
+
+<div class="modal-backdrop" id="pickBackdrop" hidden>
+  <div class="modal" style="width:min(460px,100%);display:flex;flex-direction:column;max-height:86vh" role="dialog" aria-modal="true">
+    <div class="modal-head"><b>ボードから選ぶ</b><button class="x" id="pickClose" aria-label="閉じる">×</button></div>
+    <div style="padding:11px 16px;border-bottom:1px solid var(--line)"><input type="text" id="pickSearch" placeholder="タスク名で検索…" style="width:100%;font:inherit;font-size:13.5px;padding:9px 11px;border:1px solid #d3d9e2;border-radius:9px"></div>
+    <div id="pickBody" style="overflow:auto;padding:8px 10px;flex:1 1 auto"></div>
+    <div class="modal-foot"><span id="pickN" style="font-size:12px;color:var(--sub)"></span><span class="grow"></span><button class="btn primary" id="pickDone">完了</button></div>
+  </div>
+</div>
 
 <div class="modal-backdrop" id="loginBackdrop" hidden>
   <div class="modal" style="width:min(340px,100%)" role="dialog" aria-modal="true">
@@ -549,7 +577,11 @@ function makeCard(t, showStat){
   const nowEl = authed
     ? `<button class="nowbtn ${t.active?'on':''}" title="作業中の切り替え">${t.active?'● 作業中':'○ 作業中'}</button>`
     : (t.active ? `<span class="nowbtn on" style="cursor:default">● 作業中</span>` : '');
-  const actions = authed ? `<span class="card-actions"><button class="edit">✎ 編集</button><button class="move">⇄ 移動</button></span>` : '';
+  const inToday = planHasBoardNo(t.no);
+  const todayEl = authed
+    ? `<button class="todaybtn ${inToday?'on':''}" title="今日のタスクに入れる">${inToday?'✓ 今日':'＋ 今日'}</button>`
+    : (inToday ? `<span class="todaybtn on" style="cursor:default">✓ 今日</span>` : '');
+  const actions = authed ? `<span class="card-actions">${todayEl}<button class="edit">✎ 編集</button><button class="move">⇄ 移動</button></span>` : (todayEl?`<span class="card-actions">${todayEl}</span>`:'');
   el.innerHTML =
     `<div class="card-top">${statMark}<span class="no">#${t.no}</span>${pri}<span class="dept">${t.dept}</span>${nowEl}</div>
      <div class="name">${escapeHtml(t.name)}</div>
@@ -563,6 +595,7 @@ function makeCard(t, showStat){
   const com = el.querySelector('.com');
   if(com) com.addEventListener('click',()=>com.classList.toggle('open'));
   if(authed){
+    el.querySelector('.todaybtn').addEventListener('click',e=>{e.stopPropagation(); toggleTodayBoard(t.no, t.name);});
     el.querySelector('.nowbtn').addEventListener('click',e=>{e.stopPropagation(); toggleActive(t.no);});
     el.querySelector('.edit').addEventListener('click',e=>{e.stopPropagation(); openEditor(t);});
     el.querySelector('.move').addEventListener('click',e=>{e.stopPropagation(); openPop(e.currentTarget,t);});
@@ -746,7 +779,7 @@ async function loadPlan(){
     try{ const r=await fetch(GAS_URL+'?plan='+isoD(planDate)); const j=await r.json(); planItems = j.ok? j.entries : []; }
     catch(e){ planItems=[]; }
   } else planItems=[];
-  renderPlan();
+  syncToday();
 }
 function renderPlan(){
   const l=$('tpList'); if(!l) return;
@@ -768,9 +801,10 @@ function renderPlan(){
 async function planAddItem(type, ref, label){
   if(!authed) return;
   const tmp={id:'tmp'+Date.now(), type:type, ref:ref, label:label, done:false};
-  planItems.push(tmp); renderPlan();
+  planItems.push(tmp); syncToday();
+  if(!GAS_URL) return;
   try{ const j=await gasPost({action:'plan_add', date:isoD(planDate), itemType:type, ref:(ref==null?'':ref), label:label}); tmp.id=j.entry.id; }
-  catch(e){ planItems=planItems.filter(x=>x!==tmp); renderPlan(); setBanner('追加に失敗：'+e.message,true); }
+  catch(e){ planItems=planItems.filter(x=>x!==tmp); syncToday(); setBanner('追加に失敗：'+e.message,true); }
 }
 async function planSetDone(id, done){
   const it=planItems.find(x=>x.id===id); if(!it) return;
@@ -780,32 +814,45 @@ async function planSetDone(id, done){
 }
 async function planRemove(id){
   const idx=planItems.findIndex(x=>x.id===id); if(idx<0) return;
-  const rm=planItems[idx]; planItems.splice(idx,1); renderPlan();
+  const rm=planItems[idx]; planItems.splice(idx,1); syncToday();
+  if(!GAS_URL) return;
   try{ await gasPost({action:'plan_del', id:id}); }
-  catch(e){ planItems.splice(idx,0,rm); renderPlan(); setBanner('削除に失敗：'+e.message,true); }
+  catch(e){ planItems.splice(idx,0,rm); syncToday(); setBanner('削除に失敗：'+e.message,true); }
 }
 function planUsedNo(){ const u={}; planItems.forEach(x=>{ if(x.type==='board') u[x.ref]=1; }); return u; }
-function planSug(){
-  const q=$('tpAdd').value.trim(), box=$('tpSug');
-  if(!q){ box.hidden=true; return; }
-  const used=planUsedNo();
-  const m=allBoardTasks().filter(t=>!used[t.no] && String(t.name).toLowerCase().indexOf(q.toLowerCase())>=0).slice(0,6);
-  planHi=-1;
-  if(!m.length){ box.hidden=true; return; }
-  box.innerHTML=m.map(t=>'<button data-no="'+t.no+'" data-name="'+escapeHtml(String(t.name)).replace(/"/g,'&quot;')+'"><span class="mini">ボード</span>'+escapeHtml(String(t.name))+'</button>').join('');
-  box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ planAddItem('board', +b.dataset.no, b.dataset.name); $('tpAdd').value=''; box.hidden=true; }));
-  box.hidden=false;
+function planHasBoardNo(no){ return planItems.some(x=>x.type==='board' && String(x.ref)===String(no)); }
+function toggleTodayBoard(no, name){
+  if(!authed) return;
+  const ex = planItems.find(x=>x.type==='board' && String(x.ref)===String(no));
+  if(ex) planRemove(ex.id); else planAddItem('board', no, name);
 }
-function planCommit(){
-  const q=$('tpAdd').value.trim(); if(!q) return;
-  const box=$('tpSug'), btns=box.querySelectorAll('button');
-  if(planHi>=0 && btns[planHi]){ planAddItem('board', +btns[planHi].dataset.no, btns[planHi].dataset.name); }
-  else{
-    const used=planUsedNo();
-    const exact=allBoardTasks().find(t=>String(t.name).toLowerCase()===q.toLowerCase() && !used[t.no]);
-    if(exact) planAddItem('board', exact.no, exact.name); else planAddItem('spot', '', q);
-  }
-  $('tpAdd').value=''; box.hidden=true;
+function syncToday(){
+  renderPlan();
+  if(store[activeBoard] && store[activeBoard].loaded) render();
+  if(!$('pickBackdrop').hidden) renderPicker();
+}
+// ボードから選ぶ（ピッカー）
+function openPicker(){ $('pickSearch').value=''; $('pickBackdrop').hidden=false; renderPicker(); setTimeout(()=>$('pickSearch').focus(),30); }
+function closePicker(){ $('pickBackdrop').hidden=true; }
+function renderPicker(){
+  const b=B(), q=$('pickSearch').value.trim().toLowerCase(), body=$('pickBody');
+  body.innerHTML='';
+  b.columns.map(colInfo).forEach(ci=>{
+    const list = tasks.filter(t=>ci.members.includes(t.stat) && (filter==='all'||t.dept===filter) && (!q || String(t.name).toLowerCase().indexOf(q)>=0));
+    if(!list.length) return;
+    const g=document.createElement('div'); g.className='pk-grp';
+    g.innerHTML=`<span class="mk" style="color:${cv(ci.tvar)}">${ci.mark}</span>${ci.name}`;
+    body.appendChild(g);
+    list.forEach(t=>{
+      const on=planHasBoardNo(t.no);
+      const row=document.createElement('div'); row.className='pk-row'+(on?' on':'');
+      row.innerHTML=`<span class="pk-chk">${on?'✓':''}</span><span class="nm">${escapeHtml(t.name)}</span><span class="dep">${t.dept}</span>`;
+      row.addEventListener('click',()=>toggleTodayBoard(t.no, t.name));
+      body.appendChild(row);
+    });
+  });
+  if(!body.children.length) body.innerHTML='<div class="tp-empty">該当なし</div>';
+  $('pickN').textContent='今日に '+planItems.filter(x=>x.type==='board').length+' 件';
 }
 
 // ====== 配線 ======
@@ -829,15 +876,13 @@ $('tpPrev').addEventListener('click',()=>{ planDate.setDate(planDate.getDate()-1
 $('tpNext').addEventListener('click',()=>{ planDate.setDate(planDate.getDate()+1); loadPlan(); });
 $('tpToday').addEventListener('click',()=>{ planDate=new Date(); planDate.setHours(0,0,0,0); loadPlan(); });
 $('tpPick').addEventListener('change',e=>{ if(e.target.value){ planDate=new Date(e.target.value+'T00:00'); loadPlan(); } });
-$('tpAdd').addEventListener('input',planSug);
-$('tpAdd').addEventListener('keydown',e=>{
-  const btns=$('tpSug').querySelectorAll('button');
-  if(e.key==='ArrowDown'){ planHi=Math.min(planHi+1,btns.length-1); btns.forEach((b,i)=>b.classList.toggle('hi',i===planHi)); e.preventDefault(); }
-  else if(e.key==='ArrowUp'){ planHi=Math.max(planHi-1,-1); btns.forEach((b,i)=>b.classList.toggle('hi',i===planHi)); e.preventDefault(); }
-  else if(e.key==='Enter'){ planCommit(); }
-  else if(e.key==='Escape'){ $('tpSug').hidden=true; }
-});
-document.addEventListener('click',e=>{ if(!e.target.closest('.tp-addbox')) { const s=$('tpSug'); if(s) s.hidden=true; } });
+$('tpOpenPick').addEventListener('click',openPicker);
+$('pickClose').addEventListener('click',closePicker);
+$('pickDone').addEventListener('click',closePicker);
+$('pickSearch').addEventListener('input',renderPicker);
+$('pickBackdrop').addEventListener('click',e=>{ if(e.target===$('pickBackdrop')) closePicker(); });
+$('tpAddSpot').addEventListener('click',()=>{ const v=$('tpSpot').value.trim(); if(v){ planAddItem('spot','',v); $('tpSpot').value=''; } });
+$('tpSpot').addEventListener('keydown',e=>{ if(e.key==='Enter') $('tpAddSpot').click(); });
 
 $('modeBadge').textContent = GAS_URL ? 'GAS保存' : '試作 / 保存なし';
 $('modeBadge').style.color = GAS_URL ? '#1b6e3f' : '#8a5a00';
